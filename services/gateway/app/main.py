@@ -22,7 +22,7 @@ app.add_middleware(
 SUGGESTED_MODELS = {
     "openai": ["gpt-5.1"],
     "anthropic": ["claude-opus-5"],
-    "google": ["gemini-3-pro"],
+    "google": ["gemini-3.6-flash"],
     "xai": ["grok-4"],
 }
 

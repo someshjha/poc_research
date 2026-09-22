@@ -102,6 +102,16 @@ kubectl rollout restart deployment/gateway -n research
 
 `k8s/secret.yaml` is gitignored — never commit real keys.
 
+**If a hosted provider mysteriously 404s or hits the wrong host** when
+running a service directly (outside `kind`/Docker), check your shell for a
+pre-existing `OPENAI_BASE_URL` / `ANTHROPIC_BASE_URL` / `GOOGLE_BASE_URL`.
+Some local tools (including Claude's own desktop app) export
+`ANTHROPIC_BASE_URL` in their environment for their own use, and it will
+silently override this project's default (`.../v1`) if it's already set in
+your shell — `env -u ANTHROPIC_BASE_URL` before running the service, or
+unset it, if requests fail with an empty 404. This can't happen inside the
+`kind` deployment, since pods don't inherit your shell's environment.
+
 ### Tear down
 
 ```bash
