@@ -128,6 +128,37 @@ unset it, if requests fail with an empty 404. This can't happen inside the
 | `orchestrator` | `services/orchestrator`    | LangGraph pipeline tying the six stages together, session state in Postgres |
 | `frontend`     | `frontend/`                | Static UI: pick a question, models, and simulation parameters, then run and watch each stage fill in |
 
+## Observability
+
+Every run records exactly what the pipeline did — not a summary reconstructed
+afterward, but a trace built as each LangGraph node executes: which service
+it called, the exact request it sent, the exact response it got back, the
+latency, and any error. This is stored as part of the session's state (see
+`trace` in `services/orchestrator/app/graph.py`) and surfaced in the
+frontend's **07 · Observability** tab, where every call can be expanded to
+inspect the full prompt and response.
+
+Two real bugs surfaced this way during testing against live provider keys:
+
+- **Anthropic returning 0 characters with no error.** `claude-opus-5` has
+  extended thinking on by default; with a short `max_tokens` budget it spent
+  the entire budget "thinking" and returned zero answer text — a `200 OK`
+  with an empty result, which would have been silently wrong without a trace
+  showing the exact response. Fixed by disabling thinking for this
+  assistant's plain-answer use case (`ANTHROPIC_THINKING=true` to opt back
+  in), since raising `max_tokens` alone didn't help — thinking has no
+  separate budget cap.
+- **A full run finishing on the backend but never reaching the browser.** A
+  six-stage run with several real hosted-model calls routinely takes 60-90+
+  seconds; nginx ingress-nginx's default 60s `proxy-read-timeout` was cutting
+  the connection mid-run, so the orchestrator finished and persisted the
+  result, but the browser's request had already been dropped. Fixed by
+  raising the timeout on the ingress (see `k8s/ingress.yaml`).
+
+Both were found by reading the trace / reproducing against real keys, not by
+inspection of the code — which is the point of building this in from day one
+rather than adding "observability" as an afterthought.
+
 ## A note on model quality
 
 The derivation, review, and write-up stages send their prompts to whatever

@@ -88,6 +88,10 @@
               <span class="stage-number">06</span>
               <span><strong>Write-up &amp; export</strong><small>Assembled from real stages</small></span>
             </button>
+            <button class="stage-tab" type="button" role="tab" aria-selected="false" tabindex="-1" data-stage="trace">
+              <span class="stage-number">07</span>
+              <span><strong>Observability</strong><small>Every call the pipeline made</small></span>
+            </button>
           </div>
         </aside>
 
@@ -136,6 +140,11 @@
                 <p id="writeup-status" role="status" aria-live="polite"></p>
                 <div class="text-block" id="writeup-text"></div>
               </div>
+            </div>
+            <div class="stage-view" data-view="trace" hidden>
+              <p class="stage-lede">The exact sequence of calls this run made — which service, which provider/model, what was sent, what came back, and how long each took. Nothing here is summarized after the fact; it's recorded by the pipeline as it runs.</p>
+              <div class="trace-summary" id="trace-summary"></div>
+              <ol class="trace-timeline" id="trace-timeline"></ol>
             </div>
           </section>
         </section>

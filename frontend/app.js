@@ -4,14 +4,15 @@
   const ORCHESTRATOR_BASE = window.ORCHESTRATOR_BASE || "/api/orchestrator";
   const GATEWAY_BASE = window.GATEWAY_BASE || "/api/gateway";
 
-  const stageOrder = ["literature", "derivation", "comparisons", "simulation", "review", "writeup"];
+  const stageOrder = ["literature", "derivation", "comparisons", "simulation", "review", "writeup", "trace"];
   const stageMeta = {
     literature: { eyebrow: "STAGE 01 · LITERATURE & CONTEXT", title: "Retrieving relevant prior work" },
     derivation: { eyebrow: "STAGE 02 · HYPOTHESIS & DERIVATION", title: "Live model derivation" },
     comparisons: { eyebrow: "STAGE 03 · MODEL COMPARISON", title: "Fanning out across providers" },
     simulation: { eyebrow: "STAGE 04 · SIMULATION", title: "Real numerical diagonalization" },
     review: { eyebrow: "STAGE 05 · PEER REVIEW", title: "Live critique pass" },
-    writeup: { eyebrow: "STAGE 06 · WRITE-UP & EXPORT", title: "Assembled draft section" }
+    writeup: { eyebrow: "STAGE 06 · WRITE-UP & EXPORT", title: "Assembled draft section" },
+    trace: { eyebrow: "STAGE 07 · OBSERVABILITY", title: "Every call this run made" }
   };
 
   const stageTabs = [...document.querySelectorAll("[data-stage]")];
@@ -197,6 +198,77 @@
     }));
   }
 
+  function formatJson(value) {
+    return escapeHtml(JSON.stringify(value, null, 2));
+  }
+
+  function renderTrace(trace) {
+    const summaryEl = document.querySelector("#trace-summary");
+    const timeline = document.querySelector("#trace-timeline");
+
+    if (!trace || trace.length === 0) {
+      summaryEl.innerHTML = "";
+      timeline.innerHTML = "<li class=\"trace-event\">No run has completed yet — nothing recorded.</li>";
+      return;
+    }
+
+    const totalMs = trace.reduce((sum, event) => sum + event.duration_ms, 0);
+    const allCalls = trace.flatMap(event => event.calls);
+    const errorCalls = allCalls.filter(call => call.error);
+    const providersUsed = [...new Set(allCalls.filter(c => c.provider).map(c => `${c.provider}/${c.model}`))];
+
+    summaryEl.replaceChildren(
+      ...[
+        [`${trace.length} stages`, `${totalMs.toLocaleString()} ms total`],
+        [`${allCalls.length} calls`, `${errorCalls.length} failed`],
+        [`${providersUsed.length} provider/model pairs`, providersUsed.join(", ") || "—"]
+      ].map(([label, sub]) => {
+        const stat = document.createElement("span");
+        stat.className = "trace-stat";
+        stat.innerHTML = `<strong>${escapeHtml(label)}</strong> · ${escapeHtml(sub)}`;
+        return stat;
+      })
+    );
+
+    timeline.replaceChildren(...trace.map(event => {
+      const hasError = event.calls.some(call => call.error);
+      const item = document.createElement("li");
+      item.className = `trace-event${hasError ? " has-error" : ""}`;
+
+      const callsHtml = event.calls.map(call => {
+        const label = call.provider
+          ? `${call.target} · ${call.provider}/${call.model}`
+          : `${call.target} · ${call.endpoint}`;
+        const requestBlock = call.request
+          ? `<div><p class="field-label">Request</p><pre>${formatJson(call.request)}</pre></div>`
+          : "";
+        const responseBlock = call.error
+          ? `<div><p class="field-label">Error</p><pre>${escapeHtml(call.error)}</pre></div>`
+          : `<div><p class="field-label">Response</p><pre>${escapeHtml(call.response ?? call.response_summary ?? "")}</pre></div>`;
+        return `
+          <details class="trace-call${call.error ? " is-error" : ""}">
+            <summary><span>${escapeHtml(label)}</span><span class="trace-call-latency">${call.latency_ms != null ? `${call.latency_ms} ms` : ""}</span></summary>
+            <div class="trace-call-body">
+              <div><p class="field-label">Endpoint</p><pre>${escapeHtml(call.endpoint)}</pre></div>
+              ${requestBlock}
+              ${responseBlock}
+            </div>
+          </details>
+        `;
+      }).join("");
+
+      item.innerHTML = `
+        <div class="trace-event-heading">
+          <strong>${escapeHtml(event.stage)}</strong>
+          <span class="trace-duration">${event.duration_ms} ms</span>
+        </div>
+        <p class="trace-summary-line">${escapeHtml(event.summary)}</p>
+        <div class="trace-calls">${callsHtml}</div>
+      `;
+      return item;
+    }));
+  }
+
   function renderAll(state) {
     latestState = state;
     renderLiterature(state.literature);
@@ -207,6 +279,7 @@
     renderSimulation(state.simulation);
     document.querySelector("#review-text").textContent = state.review || "";
     document.querySelector("#writeup-text").textContent = state.writeup || "";
+    renderTrace(state.trace);
   }
 
   document.querySelector("#run-button").addEventListener("click", async () => {

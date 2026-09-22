@@ -16,6 +16,14 @@ class AnthropicAdapter(Adapter):
         # Some Console API keys are scoped to an organization rather than a
         # single workspace; those require this header on every request.
         self.workspace_id = os.environ.get("ANTHROPIC_WORKSPACE_ID")
+        self.max_tokens = int(os.environ.get("ANTHROPIC_MAX_TOKENS", "2048"))
+        # Observed (via this project's own observability trace): with
+        # thinking left at its default, claude-opus-5 spent its *entire*
+        # max_tokens budget on extended thinking and returned zero answer
+        # text, even at max_tokens=4096 — raising the budget doesn't fix it,
+        # since thinking has no separate cap. This assistant wants a plain
+        # answer, not a visible reasoning trace, so thinking is disabled.
+        self.thinking_enabled = os.environ.get("ANTHROPIC_THINKING", "false").lower() == "true"
 
     def is_configured(self) -> bool:
         return bool(self.api_key)
@@ -26,11 +34,13 @@ class AnthropicAdapter(Adapter):
 
         payload = {
             "model": model,
-            "max_tokens": 1024,
+            "max_tokens": self.max_tokens,
             "messages": [{"role": "user", "content": prompt}],
         }
         if system:
             payload["system"] = system
+        if not self.thinking_enabled:
+            payload["thinking"] = {"type": "disabled"}
 
         headers = {
             "x-api-key": self.api_key,
@@ -59,4 +69,10 @@ class AnthropicAdapter(Adapter):
 
         data = response.json()
         text = "".join(block.get("text", "") for block in data.get("content", []))
+        if not text and data.get("stop_reason") == "max_tokens":
+            thinking_tokens = data.get("usage", {}).get("output_tokens_details", {}).get("thinking_tokens", 0)
+            raise ProviderError(
+                f"Model spent its entire max_tokens budget ({self.max_tokens}) on extended thinking "
+                f"({thinking_tokens} thinking tokens) and produced no answer text — raise ANTHROPIC_MAX_TOKENS"
+            )
         return GenerateResult(text=text, raw_model=data.get("model", model))

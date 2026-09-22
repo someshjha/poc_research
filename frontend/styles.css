@@ -288,3 +288,24 @@ kbd { min-width: 21px; display: inline-grid; place-items: center; padding: 3px 5
 .text-block { color: #362f4d; font-size: 0.92rem; line-height: 1.7; white-space: pre-wrap; }
 .model-answer.is-error { color: var(--rose); }
 
+
+/* Stage 7: observability / trace */
+.trace-summary { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+.trace-stat { padding: 8px 13px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); font-size: 0.78rem; color: var(--muted); }
+.trace-stat strong { color: var(--ink); font-weight: 800; }
+.trace-timeline { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.trace-event { padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-soft); }
+.trace-event.has-error { border-color: #f0d9c9; background: var(--amber-soft); }
+.trace-event-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.trace-event-heading strong { font-size: 0.9rem; }
+.trace-duration { padding: 2px 9px; border-radius: 999px; color: var(--violet); background: #efe9fd; font: 800 0.72rem/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; }
+.trace-summary-line { margin: 6px 0 0; color: var(--muted); font-size: 0.83rem; }
+.trace-calls { display: grid; gap: 8px; margin-top: 10px; }
+.trace-call { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); overflow: hidden; }
+.trace-call summary { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 12px; cursor: pointer; font-size: 0.8rem; font-weight: 700; list-style: none; }
+.trace-call summary::-webkit-details-marker { display: none; }
+.trace-call summary .trace-call-latency { color: var(--subtle); font-weight: 700; font-size: 0.72rem; }
+.trace-call.is-error summary { color: var(--rose); }
+.trace-call-body { padding: 0 12px 12px; display: grid; gap: 8px; }
+.trace-call-body .field-label { margin: 4px 0 4px; color: var(--violet); }
+.trace-call-body pre { margin: 0; padding: 9px 11px; overflow-x: auto; border-radius: 8px; background: var(--ink-deeper); color: #e6e1f5; font: 0.75rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; word-break: break-word; }

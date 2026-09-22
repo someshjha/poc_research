@@ -5,6 +5,13 @@ metadata:
   namespace: research
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /$2
+    # A full six-stage run (multiple real model calls, some 20-30s each) can
+    # comfortably exceed nginx's default 60s proxy timeout — the backend
+    # would keep working and finish, but the browser's connection gets cut
+    # and the UI never sees the response. Observed directly while testing
+    # against real provider latency; 10 minutes covers a slow real run.
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
 spec:
   ingressClassName: nginx
   rules:
