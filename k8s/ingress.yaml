@@ -1,0 +1,32 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: research-ingress
+  namespace: research
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /api/orchestrator(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service: { name: orchestrator, port: { number: 8000 } }
+          - path: /api/gateway(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service: { name: gateway, port: { number: 8000 } }
+          - path: /api/retrieval(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service: { name: retrieval, port: { number: 8000 } }
+          - path: /api/simulation(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service: { name: simulation, port: { number: 8000 } }
+          - path: /()(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service: { name: frontend, port: { number: 8080 } }

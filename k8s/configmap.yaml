@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: research
+data:
+  # Default: reuse the host machine's Ollama (models already pulled there,
+  # no need to re-download inside the cluster). Docker Desktop resolves
+  # host.docker.internal from inside kind's nodes on macOS/Windows.
+  # If that doesn't resolve on your setup, deploy k8s/ollama.yaml instead
+  # and change this to http://ollama:11434.
+  OLLAMA_BASE_URL: "http://host.docker.internal:11434"
+  GATEWAY_URL: "http://gateway:8000"
+  RETRIEVAL_URL: "http://retrieval:8000"
+  SIMULATION_URL: "http://simulation:8000"
+  DATABASE_URL: "postgresql://research:research@postgres:5432/research"
+  EMBEDDING_MODEL: "nomic-embed-text"
+  EMBEDDING_DIM: "768"

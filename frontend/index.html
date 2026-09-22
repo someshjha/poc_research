@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="A real, running research-lifecycle assistant: literature retrieval, derivation, multi-provider model comparison, simulation, review, and write-up — backed by live services on a local kind cluster."
+    />
+    <meta name="theme-color" content="#1c1440" />
+    <title>Research Lifecycle Assistant — Live</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="./app.js" defer></script>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="#main-content" aria-label="Research Lifecycle Assistant home">
+          <span class="brand-mark" aria-hidden="true"><i></i></span>
+          <span class="brand-copy">
+            <strong>Research Lifecycle Assistant</strong>
+            <small>Live — LangGraph pipeline on real services</small>
+          </span>
+        </a>
+        <div class="environment-labels" aria-label="Environment notices">
+          <span class="notice notice-synthetic" id="backend-status">
+            <i aria-hidden="true"></i>
+            Checking backend…
+          </span>
+        </div>
+      </header>
+
+      <div class="workspace" id="main-content">
+        <aside class="control-rail" aria-labelledby="setup-heading">
+          <div class="rail-heading">
+            <span class="rail-step">SETUP</span>
+            <div>
+              <p class="eyebrow">RESEARCH SESSION</p>
+              <h1 id="setup-heading">Run the lifecycle</h1>
+            </div>
+          </div>
+
+          <label class="field-label" for="question-input">Research question</label>
+          <textarea id="question-input" rows="4">For a quantum harmonic oscillator perturbed by a quartic anharmonic term λx⁴, how much does the ground-state energy shift, and does numerical diagonalization confirm the perturbative estimate?</textarea>
+
+          <label class="field-label" for="default-model-select">Model for derivation / review / write-up</label>
+          <select id="default-model-select"></select>
+
+          <label class="field-label">Models for the comparison stage</label>
+          <div class="model-picker" id="model-picker"></div>
+
+          <div class="field-row">
+            <div>
+              <label class="field-label" for="lambda-input">λ (perturbation strength)</label>
+              <input id="lambda-input" type="number" step="0.005" value="0.02" />
+            </div>
+            <div>
+              <label class="field-label" for="basis-input">Basis size</label>
+              <input id="basis-input" type="number" step="1" min="8" value="40" />
+            </div>
+          </div>
+
+          <button type="button" class="run-button" id="run-button">Run lifecycle →</button>
+          <p id="run-status" class="run-status" role="status" aria-live="polite"></p>
+
+          <div class="stage-tabs" role="tablist" aria-label="Research lifecycle stage" aria-orientation="vertical">
+            <button class="stage-tab is-active" type="button" role="tab" aria-selected="true" tabindex="0" data-stage="literature">
+              <span class="stage-number">01</span>
+              <span><strong>Literature &amp; context</strong><small>Real arXiv retrieval</small></span>
+            </button>
+            <button class="stage-tab" type="button" role="tab" aria-selected="false" tabindex="-1" data-stage="derivation">
+              <span class="stage-number">02</span>
+              <span><strong>Hypothesis &amp; derivation</strong><small>Live model call</small></span>
+            </button>
+            <button class="stage-tab" type="button" role="tab" aria-selected="false" tabindex="-1" data-stage="comparisons">
+              <span class="stage-number">03</span>
+              <span><strong>Model comparison</strong><small>Fan-out across providers</small></span>
+            </button>
+            <button class="stage-tab" type="button" role="tab" aria-selected="false" tabindex="-1" data-stage="simulation">
+              <span class="stage-number">04</span>
+              <span><strong>Simulation</strong><small>Real numerical diagonalization</small></span>
+            </button>
+            <button class="stage-tab" type="button" role="tab" aria-selected="false" tabindex="-1" data-stage="review">
+              <span class="stage-number">05</span>
+              <span><strong>Peer review</strong><small>Live critique pass</small></span>
+            </button>
+            <button class="stage-tab" type="button" role="tab" aria-selected="false" tabindex="-1" data-stage="writeup">
+              <span class="stage-number">06</span>
+              <span><strong>Write-up &amp; export</strong><small>Assembled from real stages</small></span>
+            </button>
+          </div>
+        </aside>
+
+        <section class="main-stage" aria-label="Active lifecycle stage">
+          <div class="stage-heading">
+            <div>
+              <p class="eyebrow" id="stage-eyebrow">STAGE 01 · LITERATURE &amp; CONTEXT</p>
+              <h2 id="stage-title">Retrieving relevant prior work</h2>
+            </div>
+          </div>
+
+          <section class="stage-panel" id="stage-panel" aria-live="polite">
+            <div class="stage-view" data-view="literature">
+              <p class="stage-lede">Real papers fetched from the public arXiv API and embedded locally, ranked by semantic similarity.</p>
+              <ul class="paper-list" id="paper-list"></ul>
+            </div>
+            <div class="stage-view" data-view="derivation" hidden>
+              <p class="stage-lede">Raw output from the selected model — no post-processing.</p>
+              <div class="text-block" id="derivation-text"></div>
+            </div>
+            <div class="stage-view" data-view="comparisons" hidden>
+              <p class="stage-lede">The same prompt sent to every selected provider/model, run concurrently.</p>
+              <div class="model-grid" id="model-grid"></div>
+            </div>
+            <div class="stage-view" data-view="simulation" hidden>
+              <div class="simulation-grid">
+                <div class="chart-card">
+                  <p class="card-label">Lowest energy levels (ℏω units)</p>
+                  <svg id="energy-chart" viewBox="0 0 420 220" role="img" aria-label="Energy level chart"></svg>
+                </div>
+                <div class="sim-summary">
+                  <p class="card-label">Result summary</p>
+                  <dl class="sim-stats" id="sim-stats"></dl>
+                </div>
+              </div>
+            </div>
+            <div class="stage-view" data-view="review" hidden>
+              <div class="text-block" id="review-text"></div>
+            </div>
+            <div class="stage-view" data-view="writeup" hidden>
+              <div class="writeup-card">
+                <div class="writeup-toolbar">
+                  <p class="card-label">Draft section</p>
+                  <button type="button" class="copy-button" id="copy-writeup">Copy text</button>
+                </div>
+                <p id="writeup-status" role="status" aria-live="polite"></p>
+                <div class="text-block" id="writeup-text"></div>
+              </div>
+            </div>
+          </section>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>

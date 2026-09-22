@@ -1,0 +1,52 @@
+# Optional: run Ollama inside the cluster instead of reusing the host's.
+# Only needed if host.docker.internal doesn't resolve from your kind nodes.
+# After applying this, change OLLAMA_BASE_URL in configmap.yaml to
+# "http://ollama:11434", re-apply the configmap, and restart the
+# gateway/retrieval deployments. Models are NOT pre-pulled — exec in and
+# run `ollama pull <model>` once the pod is ready.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ollama-data
+  namespace: research
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama
+  namespace: research
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: ollama }
+  template:
+    metadata:
+      labels: { app: ollama }
+    spec:
+      containers:
+        - name: ollama
+          image: ollama/ollama:latest
+          ports:
+            - containerPort: 11434
+          volumeMounts:
+            - name: data
+              mountPath: /root/.ollama
+      volumes:
+        - name: data
+          persistentVolumeClaim: { claimName: ollama-data }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama
+  namespace: research
+spec:
+  selector: { app: ollama }
+  ports:
+    - port: 11434
+      targetPort: 11434

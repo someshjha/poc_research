@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway
+  namespace: research
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: gateway }
+  template:
+    metadata:
+      labels: { app: gateway }
+    spec:
+      containers:
+        - name: gateway
+          image: research/gateway:local
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef: { name: app-config }
+            - secretRef: { name: provider-keys }
+          ports:
+            - containerPort: 8000
+          readinessProbe:
+            httpGet: { path: /healthz, port: 8000 }
+            initialDelaySeconds: 3
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway
+  namespace: research
+spec:
+  selector: { app: gateway }
+  ports:
+    - port: 8000
+      targetPort: 8000
